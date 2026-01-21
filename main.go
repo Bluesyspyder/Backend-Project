@@ -2,10 +2,11 @@ package main
 
 import (
 	"context"
-	// "fmt"
 	"log"
+	"os"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/joho/godotenv"
 )
 
 type Todo struct {
@@ -24,6 +25,12 @@ func main() {
 	}
 	app:=fiber.New()
 
+	err:=godotenv.Load(".env")
+	if err!=nil{
+		log.Fatal("Error loading env file")
+	}
+
+	PORT := os.Getenv("PORT")
 
 	app.Get("/",func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{"msg":"API is working"})
@@ -113,6 +120,6 @@ app.Delete("/api/todos/:id", func(c *fiber.Ctx) error{
 })
 
 
-log.Fatal(app.Listen(":4000"))
+log.Fatal(app.Listen(":"+PORT))
 
 }
