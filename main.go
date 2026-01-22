@@ -3,123 +3,82 @@ package main
 import (
 	"context"
 	"log"
-	"os"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/joho/godotenv"
 )
 
 type Todo struct {
-	ID int `json:"id"`
-	Completed bool `json:"completed"`
-	Body string `json:"body"`
+	ID        int    `json:"id"`
+	Body      string `json:"body"`
+	Completed bool   `json:"completed"`
 }
 
 func main() {
 	ConnectDB()
-	if DB == nil {
-	log.Fatal("DB is nil — connection failed")
-}
-	if err := DB.Ping(context.Background()); err != nil {
-		log.Fatal("DB ping failed:", err)
-	}
-	app:=fiber.New()
 
-	err:=godotenv.Load(".env")
-	if err!=nil{
-		log.Fatal("Error loading env file")
-	}
+	app := fiber.New()
 
-	PORT := os.Getenv("PORT")
+	// CREATE
+	app.Post("/api/todos", func(c *fiber.Ctx) error {
+		todo := new(Todo)
 
-	app.Get("/",func(c *fiber.Ctx) error {
-		return c.JSON(fiber.Map{"msg":"API is working"})
-
-	})
-
-	//Create a TODO
-
-	app.Post("/api/todos", func(c *fiber.Ctx)error {
-		todo:= new(Todo)
-
-		if err:= c.BodyParser(todo); err != nil{
+		if err := c.BodyParser(todo); err != nil {
 			return err
 		}
 
 		err := DB.QueryRow(
 			context.Background(),
-			"INSERT INTO todos (body) VALUES ($1) RETURNING id, completed",
+			"INSERT INTO todos (body) VALUES ($1) RETURNING id, body, completed",
 			todo.Body,
-		).Scan(&todo.ID,&todo.Completed)
+		).Scan(&todo.ID, &todo.Body, &todo.Completed)
 
-		if err!= nil{
+		if err != nil {
 			return err
 		}
 
 		return c.Status(201).JSON(todo)
-
 	})
 
-	//UPDATE a TODO
+	// UPDATE (toggle completed)
+	app.Patch("/api/todos/:id", func(c *fiber.Ctx) error {
+		id := c.Params("id")
 
-app.Patch("/api/todos/:id", func(c *fiber.Ctx) error {
-	id := c.Params("id")
+		var todo Todo
+		err := DB.QueryRow(
+			context.Background(),
+			`UPDATE todos
+			SEAT completed = NOT completed
+			WHERE id = $1
+			RETURNING id, body, completed`,
+			id,
+		).Scan(&todo.ID, &todo.Body, &todo.Completed)
 
-	var req struct {
-		Body *string `json:"body"`
-	}
-	c.BodyParser(&req)
+		if err != nil {
+			return c.Status(404).JSON(fiber.Map{"error": "Todo not found"})
+		}
 
-	var todo Todo
-	err := DB.QueryRow(
-		context.Background(),
-		`
-		UPDATE todos
-		SET
-			body = COALESCE($1, body),
-			completed = NOT completed
-		WHERE id = $2
-		RETURNING id, body, completed
-		`,
-		req.Body, id, 
-	).Scan(&todo.ID, &todo.Body, &todo.Completed)
-
-	if err != nil {
-		return c.Status(404).JSON(fiber.Map{"error": "Todo not found"})
-	}
-
-	return c.JSON(todo)
-})
-
-//DELETE a todo
-
-app.Delete("/api/todos/:id", func(c *fiber.Ctx) error{
-
-	id := c.Params("id")
-
-	cmdTag, err := DB.Exec(
-		context.Background(),
-		"DELETE FROM todos WHERE id=$1",
-		id,
-	)
-
-	if err != nil{
-		return err
-	}
-
-	if cmdTag.RowsAffected() == 0 {
-		return c.Status(404).JSON(fiber.Map{
-			"error":"Todo not found",
-		})
-	}
-
-	return c.JSON(fiber.Map{
-		"Success":"Todo Deleted",
+		return c.JSON(todo)
 	})
 
-})
+	// DELETE
+	app.Delete("/api/todos/:id", func(c *fiber.Ctx) error {
+		id := c.Params("id")
 
+		cmd, err := DB.Exec(
+			context.Background(),
+			"DELETE FROM todos WHERE id=$1",
+			id,
+		)
+		if err != nil {
+			return err
+		}
 
-log.Fatal(app.Listen(":"+PORT))
+		if cmd.RowsAffected() == 0 {
+			return c.Status(404).JSON(fiber.Map{"error": "Todo not found"})
+		}
 
+		return c.JSON(fiber.Map{"msg": "Deleted"})
+	})
+
+	log.Fatal(app.Listen(":4000"))
 }
