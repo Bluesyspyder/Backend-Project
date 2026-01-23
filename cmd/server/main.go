@@ -1,4 +1,4 @@
-package main
+package db
 
 import (
 	"context"
@@ -27,7 +27,7 @@ func main() {
 			return err
 		}
 
-		err := DB.QueryRow(
+		err := db.DB.QueryRow(
 			context.Background(),
 			"INSERT INTO todos (body) VALUES ($1) RETURNING id, body, completed",
 			todo.Body,
@@ -51,7 +51,7 @@ app.Patch("/api/todos/:id", func(c *fiber.Ctx) error {
 	c.BodyParser(&req)
 
 	var todo Todo
-	err := DB.QueryRow(
+	err := db.DB.QueryRow(
 		context.Background(),
 		`
 		UPDATE todos
@@ -76,7 +76,7 @@ app.Patch("/api/todos/:id", func(c *fiber.Ctx) error {
 	app.Delete("/api/todos/:id", func(c *fiber.Ctx) error {
 		id := c.Params("id")
 
-		cmd, err := DB.Exec(
+		cmd, err := db.DB.Exec(
 			context.Background(),
 			"DELETE FROM todos WHERE id=$1",
 			id,

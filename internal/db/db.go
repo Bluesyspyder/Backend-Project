@@ -1,11 +1,10 @@
-package main
+package db
+
 import (
-	"log"
 	"context"
-	"os"
+	"log"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/joho/godotenv"
 )
 
 
