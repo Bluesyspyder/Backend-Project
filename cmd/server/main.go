@@ -1,4 +1,4 @@
-package db
+package main
 
 import (
 	"context"
@@ -19,7 +19,6 @@ func main() {
 
 	app := fiber.New()
 
-	// CREATE
 	app.Post("/api/todos", func(c *fiber.Ctx) error {
 		todo := new(Todo)
 
@@ -38,58 +37,6 @@ func main() {
 		}
 
 		return c.Status(201).JSON(todo)
-	})
-
-	// UPDATE (toggle completed)
-app.Patch("/api/todos/:id", func(c *fiber.Ctx) error {
-	id := c.Params("id")
-
-	var req struct {
-		Body *string `json:"body"`
-	}
-
-	c.BodyParser(&req)
-
-	var todo Todo
-	err := db.DB.QueryRow(
-		context.Background(),
-		`
-		UPDATE todos
-		SET
-			body = COALESCE($1, body),
-			completed = NOT completed
-		WHERE id = $2
-		RETURNING id, body, completed
-		`,
-		req.Body, id,
-	).Scan(&todo.ID, &todo.Body, &todo.Completed)
-
-	if err != nil {
-		return c.Status(404).JSON(fiber.Map{"error": "Todo not found"})
-	}
-
-	return c.JSON(todo)
-})
-
-
-	// DELETE
-	app.Delete("/api/todos/:id", func(c *fiber.Ctx) error {
-		id := c.Params("id")
-
-		cmd, err := db.DB.Exec(
-			context.Background(),
-			"DELETE FROM todos WHERE id=$1",
-			id,
-		)
-		if err != nil {
-			return err
-		}
-
-		if cmd.RowsAffected() == 0 {
-			return c.Status(404).JSON(fiber.Map{"error": "Todo not found"})
-		}
-
-		return c.JSON(fiber.Map{"msg": "Deleted"})
 	})
 
 	log.Fatal(app.Listen(":4000"))

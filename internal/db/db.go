@@ -3,35 +3,34 @@ package db
 import (
 	"context"
 	"log"
+	"os"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/joho/godotenv"
 )
-
 
 var DB *pgxpool.Pool
 
-
-func ConnectDB(){
-	err := godotenv.Load()
-	if err != nil {
+func ConnectDB() {
+	// load .env
+	if err := godotenv.Load(); err != nil {
 		log.Fatal("error loading .env file")
 	}
 
 	dsn := os.Getenv("DATABASE_URL")
-	if dsn == ""{
-		log.Fatal("Database URL not found")
+	if dsn == "" {
+		log.Fatal("DATABASE_URL not found")
 	}
 
-	db, err := pgxpool.New(context.Background(), dsn)
+	var err error
+	DB, err = pgxpool.New(context.Background(), dsn)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	if err := db.Ping(context.Background())
-	err != nil {
+	if err = DB.Ping(context.Background()); err != nil {
 		log.Fatal(err)
 	}
 
-	DB = db
-	log.Println("Postgres connected succesfully")
+	log.Println("Postgres connected successfully")
 }
