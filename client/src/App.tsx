@@ -11,7 +11,7 @@ const App = () => {
   const [todos,setTodos] = useState<Todo[]>([]);
 
   useEffect(() => {
-    fetch('/api/todos')
+    fetch('http://localhost:4000/api/todos')
     .then(res => res.json())
     .then(setTodos)
   },[])

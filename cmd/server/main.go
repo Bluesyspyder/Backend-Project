@@ -27,9 +27,9 @@ func main() {
 		AllowMethods: "GET,POST,PATCH,DELETE",
 	}))
 
-	app.Head("/api/todos", func(c *fiber.Ctx) error{
-		return c.SendStatus(200)
-	})
+	// app.Head("/api/todos", func(c *fiber.Ctx) error{
+	// 	return c.SendStatus(200)
+	// })
 
 	app.Get("/api/todos", func(c *fiber.Ctx) error {
 		rows, err := db.DB.Query(
