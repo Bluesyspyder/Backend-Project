@@ -6,6 +6,7 @@ import (
 
 	"github.com/Bluesyspyder/Backend-Project/internal/db"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 )
 
 type Todo struct {
@@ -20,7 +21,17 @@ func main() {
 	app := fiber.New()
 
 
-	app.Get("/api/todos",func(c *fiber.Ctx) error{
+	app.Use(cors.New(cors.Config{
+		AllowOrigins: "http://localhost:5173",
+		AllowHeaders: "Origin, Content-Type, Accept",
+		AllowMethods: "GET,POST,PATCH,DELETE",
+	}))
+
+	app.Head("/api/todos", func(c *fiber.Ctx) error{
+		return c.SendStatus(200)
+	})
+
+	app.Get("/api/todos", func(c *fiber.Ctx) error {
 		rows, err := db.DB.Query(
 			context.Background(),
 			"SELECT id,body,completed FROM todos ORDER BY id DESC",
@@ -36,15 +47,14 @@ func main() {
 
 		for rows.Next() {
 			var t Todo
-			if err := rows.Scan(&t.ID,&t.Body,&t.Completed); err != nil {
+			if err := rows.Scan(&t.ID, &t.Body, &t.Completed); err != nil {
 				return err
-			} 
+			}
 			todos = append(todos, t)
 		}
 
-		return c.JSON(todos)
+		return c.Status(200).JSON(todos)
 	})
-
 
 	app.Post("/api/todos", func(c *fiber.Ctx) error {
 		todo := new(Todo)
@@ -84,7 +94,7 @@ func main() {
 			return c.Status(404).JSON(fiber.Map{"error": "Todo not found"})
 		}
 
-		return c.JSON(todo)
+		return c.Status(201).JSON(todo)
 	})
 
 	app.Delete("/api/todos/:id", func(c *fiber.Ctx) error {
@@ -103,7 +113,7 @@ func main() {
 			return c.Status(404).JSON(fiber.Map{"error": "Todo not found"})
 		}
 
-		return c.JSON(fiber.Map{"msg": "Deleted"})
+		return c.Status(200).JSON(fiber.Map{"msg": "Deleted"})
 	})
 
 	log.Fatal(app.Listen(":4000"))

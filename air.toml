@@ -2,13 +2,12 @@ root = "."
 tmp_dir = "tmp"
 
 [build]
-bin = "main"
-cmd = "go build -o {{.Output}} {{.Input}}"
-include = ["**/*.go"]
-exclude = [
-  "tmp/*",
-  "vendor/*",
-  "backshot/node_modules/*",
-  "backshot/dist/*",
-  "backshot/.git/*"
-]
+  cmd = "go run ."
+  bin = "tmp/main.exe"
+  include_ext = ["go"]
+  exclude_dir = ["client", "node_modules", "tmp", ".git"]
+  delay = 1000
+
+[log]
+  time = true
+
