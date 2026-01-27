@@ -26,7 +26,7 @@ const App = () => {
         <h3>
           {todos.map(t => (
             <div key={t.id}>
-              hi
+              {t.body}
             </div>
           ))}
         </h3>
